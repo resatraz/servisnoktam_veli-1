@@ -137,12 +137,12 @@ class _SetupLocationScreenState extends State<SetupLocationScreen> {
                   ),
                 ],
               ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _lat != null && _lng != null ? _saveAndContinue : null,
-                child: const Text('Devam et'),
+                child: const Text('Devam Et'),
               ),
             ),
           ],
