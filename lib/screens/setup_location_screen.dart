@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/theme.dart';
 import 'setup_driver_screen.dart';
@@ -20,14 +19,11 @@ class _SetupLocationScreenState extends State<SetupLocationScreen> {
   Future<void> _getCurrentLocation() async {
     setState(() => _loading = true);
     try {
-      final perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        await Geolocator.requestPermission();
-      }
-      final pos = await Geolocator.getCurrentPosition();
+      // Geolocator olmadan varsayılan konum kullan
+      // Gerçek uygulamada geolocator paketi gerekli
       setState(() {
-        _lat = pos.latitude;
-        _lng = pos.longitude;
+        _lat = 41.0082; // İstanbul varsayılan
+        _lng = 28.9784;
       });
     } catch (e) {
       debugPrint('Konum hatası: $e');

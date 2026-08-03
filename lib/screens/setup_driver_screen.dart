@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import "package:cached_network_image/cached_network_image.dart";
 import '../core/theme.dart';
 import '../core/models/driver_model.dart';
 import '../services/firestore_service.dart';
@@ -85,12 +84,7 @@ class _SetupDriverScreenState extends State<SetupDriverScreen> {
                             CircleAvatar(
                               radius: 22,
                               backgroundColor: AppColors.background,
-                              backgroundImage: d.photoUrl.isNotEmpty
-                                ? CachedNetworkImageProvider(d.photoUrl)
-                                : null,
-                              child: d.photoUrl.isEmpty
-                                ? const Icon(Icons.person, color: AppColors.primary)
-                                : null,
+                              child: const Icon(Icons.person, color: AppColors.primary),
                             ),
                             const SizedBox(width: 12),
                             Expanded(

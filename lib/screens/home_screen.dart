@@ -1,10 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../core/theme.dart';
 import '../core/models/driver_model.dart';
 import '../services/firestore_service.dart';
@@ -31,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   LocationModel? _driverLocation;
   DriverModel? _driver;
   bool _hasNotified = false;
-  StreamSubscription<DatabaseEvent>? _locationSub;
+  Timer? _locationTimer;
 
   @override
   void initState() {
@@ -47,17 +43,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _listenLocation() {
-    _locationSub = FirebaseDatabase.instance
-      .ref('locations/${widget.driverId}')
-      .onValue
-      .listen((event) {
-        if (event.snapshot.value == null) return;
-        final map = event.snapshot.value as Map<dynamic, dynamic>;
-        setState(() {
-          _driverLocation = LocationModel.fromMap(map);
-        });
-        _checkDistanceAndNotify();
+    // Mock location updates - Firebase olmadan test için
+    _locationTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted) return;
+      // Rastgele konum simülasyonu
+      final randomLat = widget.homeLat + (DateTime.now().millisecond % 100 - 50) / 10000;
+      final randomLng = widget.homeLng + (DateTime.now().millisecond % 100 - 50) / 10000;
+      setState(() {
+        _driverLocation = LocationModel(
+          lat: randomLat,
+          lng: randomLng,
+          isActive: true,
+        );
       });
+      _checkDistanceAndNotify();
+    });
   }
 
   void _checkDistanceAndNotify() {
@@ -82,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _locationSub?.cancel();
+    _locationTimer?.cancel();
     super.dispose();
   }
 
@@ -119,44 +119,44 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
-          // Map
+          // Konum bilgisi
           Expanded(
             child: _driverLocation != null && _driverLocation!.isActive
-              ? FlutterMap(
-                  options: MapOptions(
-                    initialCenter: LatLng(_driverLocation!.lat, _driverLocation!.lng),
-                    initialZoom: 15,
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.directions_bus, size: 64, color: AppColors.primary),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Şoför Konumu',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Enlem: ${_driverLocation!.lat.toStringAsFixed(6)}',
+                        style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                      ),
+                      Text(
+                        'Boylam: ${_driverLocation!.lng.toStringAsFixed(6)}',
+                        style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Ev Konumu',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Enlem: ${widget.homeLat.toStringAsFixed(6)}',
+                        style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                      ),
+                      Text(
+                        'Boylam: ${widget.homeLng.toStringAsFixed(6)}',
+                        style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                      ),
+                    ],
                   ),
-                  children: [
-                    TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.servisnoktam.veli',
-                    ),
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: LatLng(_driverLocation!.lat, _driverLocation!.lng),
-                          width: 40,
-                          height: 40,
-                          child: const Icon(
-                            Icons.directions_bus,
-                            color: AppColors.primary,
-                            size: 40,
-                          ),
-                        ),
-                        Marker(
-                          point: LatLng(widget.homeLat, widget.homeLng),
-                          width: 40,
-                          height: 40,
-                          child: const Icon(
-                            Icons.home,
-                            color: AppColors.success,
-                            size: 40,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
                 )
               : const Center(
                   child: Column(
@@ -182,10 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: AppColors.background,
-                  backgroundImage: _driver?.photoUrl.isNotEmpty == true
-                    ? CachedNetworkImageProvider(_driver!.photoUrl)
-                    : null,
-                  child: _driver?.photoUrl.isEmpty == true
+                  child: _driver?.photoUrl.isNotEmpty == true
                     ? const Icon(Icons.person, color: AppColors.primary)
                     : null,
                 ),
