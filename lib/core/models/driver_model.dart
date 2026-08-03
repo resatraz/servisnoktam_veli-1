@@ -4,6 +4,7 @@ class DriverModel {
   final String plate;
   final String school;
   final String photoUrl;
+  final String phone;
   final bool isActive;
 
   DriverModel({
@@ -12,6 +13,7 @@ class DriverModel {
     required this.plate,
     required this.school,
     required this.photoUrl,
+    required this.phone,
     required this.isActive,
   });
 
@@ -22,6 +24,7 @@ class DriverModel {
       plate: map['plate'] ?? '',
       school: map['school'] ?? '',
       photoUrl: map['photoUrl'] ?? '',
+      phone: map['phone'] ?? '',
       isActive: map['isActive'] ?? false,
     );
   }

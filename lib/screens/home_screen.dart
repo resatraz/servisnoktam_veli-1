@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../core/theme.dart';
 import '../core/models/driver_model.dart';
 import '../services/firestore_service.dart';
 import '../services/location_service.dart';
 import '../services/notification_service.dart';
 import 'announcements_screen.dart';
+import 'setup_driver_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String driverId;
@@ -28,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   DriverModel? _driver;
   bool _hasNotified = false;
   Timer? _locationTimer;
+  DateTime? _lastUpdateTime;
 
   @override
   void initState() {
@@ -55,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
           lng: randomLng,
           isActive: true,
         );
+        _lastUpdateTime = DateTime.now();
       });
       _checkDistanceAndNotify();
     });
@@ -76,8 +81,65 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  String _getStatusText() {
+    if (_driverLocation == null) return 'Bekleniyor';
+    if (!_driverLocation!.isActive) {
+      final diff = _lastUpdateTime != null 
+          ? DateTime.now().difference(_lastUpdateTime!)
+          : const Duration(minutes: 10);
+      if (diff.inMinutes < 60) {
+        return 'Son görülme: ${diff.inMinutes} dk önce';
+      } else {
+        return 'Son görülme: ${diff.inHours} saat önce';
+      }
+    }
+    return '● Canlı Takip';
+  }
+
+  Color _getStatusColor() {
+    if (_driverLocation == null) return AppColors.textSecondary;
+    if (!_driverLocation!.isActive) return AppColors.danger;
+    return AppColors.success;
+  }
+
+  String _getLastUpdateText() {
+    if (_lastUpdateTime == null) return 'Güncelleme bekleniyor...';
+    final now = DateTime.now();
+    final diff = now.difference(_lastUpdateTime!);
+    if (diff.inSeconds < 60) {
+      return '${diff.inSeconds} saniye önce güncellendi';
+    } else if (diff.inMinutes < 60) {
+      return '${diff.inMinutes} dakika önce güncellendi';
+    } else {
+      return '${diff.inHours} saat önce güncellendi';
+    }
+  }
+
+  String _getDistanceText() {
+    if (_driverLocation == null) return 'Mesafe hesaplanıyor...';
+    final distance = LocationService.calculateDistance(
+      widget.homeLat, widget.homeLng,
+      _driverLocation!.lat, _driverLocation!.lng,
+    );
+    if (distance < 1000) {
+      return '${distance.toInt()} m';
+    } else {
+      return '${(distance / 1000).toStringAsFixed(1)} km';
+    }
+  }
+
   Future<void> _resetNotification() async {
     setState(() => _hasNotified = false);
+  }
+
+  void _callDriver() {
+    if (_driver?.phone.isNotEmpty == true) {
+      // URL launcher ile arama yapılabilir
+      // Şimdilik sadece placeholder
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${_driver!.phone} aranıyor...')),
+      );
+    }
   }
 
   @override
@@ -90,6 +152,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (_) => const SetupDriverScreen()));
+          },
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -119,44 +188,46 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
-          // Konum bilgisi
+          // Harita
           Expanded(
             child: _driverLocation != null && _driverLocation!.isActive
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.directions_bus, size: 64, color: AppColors.primary),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Şoför Konumu',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Enlem: ${_driverLocation!.lat.toStringAsFixed(6)}',
-                        style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                      ),
-                      Text(
-                        'Boylam: ${_driverLocation!.lng.toStringAsFixed(6)}',
-                        style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Ev Konumu',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Enlem: ${widget.homeLat.toStringAsFixed(6)}',
-                        style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                      ),
-                      Text(
-                        'Boylam: ${widget.homeLng.toStringAsFixed(6)}',
-                        style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-                      ),
-                    ],
+              ? FlutterMap(
+                  options: MapOptions(
+                    initialCenter: LatLng(_driverLocation!.lat, _driverLocation!.lng),
+                    initialZoom: 15,
+                    minZoom: 10,
+                    maxZoom: 19,
                   ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.servisnoktam.veli',
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: LatLng(_driverLocation!.lat, _driverLocation!.lng),
+                          width: 40,
+                          height: 40,
+                          child: const Icon(
+                            Icons.directions_bus,
+                            size: 40,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        Marker(
+                          point: LatLng(widget.homeLat, widget.homeLng),
+                          width: 40,
+                          height: 40,
+                          child: const Icon(
+                            Icons.home,
+                            size: 40,
+                            color: AppColors.success,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 )
               : const Center(
                   child: Column(
@@ -177,44 +248,92 @@ class _HomeScreenState extends State<HomeScreen> {
               color: AppColors.surface,
               border: Border(top: BorderSide(color: AppColors.border)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.background,
-                  child: _driver?.photoUrl.isNotEmpty == true
-                    ? const Icon(Icons.person, color: AppColors.primary)
-                    : null,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _driverLocation?.isActive == true
-                          ? '● Canlı Takip'
-                          : 'Bekleniyor',
+                // Üst satır: Durum ve mesafe
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: AppColors.background,
+                      child: _driver?.photoUrl.isNotEmpty == true
+                        ? const Icon(Icons.person, color: AppColors.primary)
+                        : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _getStatusText(),
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: _getStatusColor(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Mesafe
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _getDistanceText(),
                         style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: _driverLocation?.isActive == true
-                            ? AppColors.success
-                            : AppColors.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        _hasNotified
-                          ? '✓ Bildirim gönderildi'
-                          : 'Bildirim bekleniyor',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
-                        ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Alt satır: Son güncelleme ve arama butonu
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.update, size: 14, color: AppColors.textSecondary),
+                          const SizedBox(width: 4),
+                          Text(
+                            _getLastUpdateText(),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    Column(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.phone, size: 20),
+                          onPressed: _callDriver,
+                          tooltip: 'Sürücüyü Ara',
+                          color: AppColors.primary,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        const Text(
+                          'Ara',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),

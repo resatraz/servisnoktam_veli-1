@@ -35,6 +35,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         options: MapOptions(
           initialCenter: _selectedLocation ?? const LatLng(37.1674, 38.7955),
           initialZoom: 15,
+          minZoom: 10,
+          maxZoom: 19,
           onTap: (tapPosition, point) {
             setState(() {
               _selectedLocation = point;

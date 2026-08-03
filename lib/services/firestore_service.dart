@@ -8,17 +8,19 @@ class FirestoreService {
       DriverModel(
         id: 'driver1',
         name: 'Ahmet Yılmaz',
-        phone: '5551234567',
         plate: '34 ABC 123',
-        capacity: 20,
+        school: 'İlkokul',
+        photoUrl: '',
+        phone: '5551234567',
         isActive: true,
       ),
       DriverModel(
         id: 'driver2',
         name: 'Mehmet Demir',
-        phone: '5559876543',
         plate: '34 XYZ 789',
-        capacity: 15,
+        school: 'Ortaokul',
+        photoUrl: '',
+        phone: '5559876543',
         isActive: true,
       ),
     ];
@@ -26,12 +28,39 @@ class FirestoreService {
 
   static Future<DriverModel?> getDriver(String driverId) async {
     // Mock data döndür
+    if (driverId == 'driver1') {
+      return DriverModel(
+        id: 'driver1',
+        name: 'Ahmet Yılmaz',
+        plate: '34 ABC 123',
+        school: 'İlkokul',
+        photoUrl: '',
+        phone: '5551234567',
+        isActive: true,
+      );
+    } else if (driverId == 'driver2') {
+      return DriverModel(
+        id: 'driver2',
+        name: 'Mehmet Demir',
+        plate: '34 XYZ 789',
+        school: 'Ortaokul',
+        photoUrl: '',
+        phone: '5559876543',
+        isActive: true,
+      );
+    }
     return null;
   }
 
   static Stream listenDriverLocation(String driverId) {
-    // Mock stream - hiçbir şey yapma
-    return const Stream.empty();
+    // Mock stream - konum güncellemesi simülasyonu
+    return Stream.periodic(const Duration(seconds: 3), (count) {
+      return {
+        'lat': 37.1674 + (count % 10) * 0.001,
+        'lng': 38.7955 + (count % 10) * 0.001,
+        'isActive': true,
+      };
+    });
   }
 
   static Future<void> saveParentInfo(String parentId, Map<String, dynamic> data) async {

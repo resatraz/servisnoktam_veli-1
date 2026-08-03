@@ -102,9 +102,18 @@ class _SetupLocationScreenState extends State<SetupLocationScreen> {
                     style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                   const SizedBox(height: 16),
                   if (_lat != null && _lng != null)
-                    const Text(
-                      'Konum seçildi ✓',
-                      style: TextStyle(fontSize: 13, color: AppColors.success, fontWeight: FontWeight.w500),
+                    Column(
+                      children: [
+                        const Text(
+                          'Konum seçildi ✓',
+                          style: TextStyle(fontSize: 13, color: AppColors.success, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_lat!.toStringAsFixed(6)}, ${_lng!.toStringAsFixed(6)}',
+                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        ),
+                      ],
                     ),
                 ],
               ),
