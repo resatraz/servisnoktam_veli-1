@@ -4,7 +4,8 @@ import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  // Firebase geçici olarak devre dışı - initialization hatası
+  // Firebase Web config gerekli
   runApp(const ServisNoktamVeliApp());
 }
 

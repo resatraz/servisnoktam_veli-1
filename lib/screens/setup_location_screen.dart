@@ -123,7 +123,7 @@ class _SetupLocationScreenState extends State<SetupLocationScreen> {
                       label: const Text('Konumu Otomatik Al'),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
