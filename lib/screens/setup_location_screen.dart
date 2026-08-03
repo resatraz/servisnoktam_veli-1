@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/theme.dart';
 import 'setup_driver_screen.dart';
@@ -22,8 +23,8 @@ class _SetupLocationScreenState extends State<SetupLocationScreen> {
       // Geolocator olmadan varsayılan konum kullan
       // Gerçek uygulamada geolocator paketi gerekli
       setState(() {
-        _lat = 41.0082; // İstanbul varsayılan
-        _lng = 28.9784;
+        _lat = 37.1674; // Şanlıurfa varsayılan
+        _lng = 38.7955;
       });
     } catch (e) {
       debugPrint('Konum hatası: $e');
@@ -101,15 +102,9 @@ class _SetupLocationScreenState extends State<SetupLocationScreen> {
                     style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                   const SizedBox(height: 16),
                   if (_lat != null && _lng != null)
-                    Column(
-                      children: [
-                        Text('Enlem: ${_lat!.toStringAsFixed(6)}',
-                          style: const TextStyle(fontSize: 11,
-                            color: AppColors.textSecondary)),
-                        Text('Boylam: ${_lng!.toStringAsFixed(6)}',
-                          style: const TextStyle(fontSize: 11,
-                            color: AppColors.textSecondary)),
-                      ],
+                    const Text(
+                      'Konum seçildi ✓',
+                      style: TextStyle(fontSize: 13, color: AppColors.success, fontWeight: FontWeight.w500),
                     ),
                 ],
               ),
