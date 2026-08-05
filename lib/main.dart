@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'core/theme.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Firebase geçici olarak devre dışı - initialization hatası
-  // Firebase Web config gerekli
+  await Firebase.initializeApp();
   runApp(const ServisNoktamVeliApp());
 }
 

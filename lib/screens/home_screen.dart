@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../core/theme.dart';
@@ -29,9 +28,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   LocationModel? _driverLocation;
   DriverModel? _driver;
-  bool _hasNotified = false;
+  bool _hasNotified500 = false;
+  bool _hasNotified50 = false;
+  bool _hasNotifiedArrived = false;
   Timer? _locationTimer;
   DateTime? _lastUpdateTime;
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
@@ -67,16 +69,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _checkDistanceAndNotify() {
     if (_driverLocation == null || !_driverLocation!.isActive) return;
-    if (_hasNotified) return;
     final distance = LocationService.calculateDistance(
       widget.homeLat, widget.homeLng,
       _driverLocation!.lat, _driverLocation!.lng,
     );
-    if (distance < 500) {
-      setState(() => _hasNotified = true);
+    
+    // 500m kala bildirim
+    if (!_hasNotified500 && distance < 500) {
+      setState(() => _hasNotified500 = true);
       NotificationService.showNotification(
         title: 'Servis Yaklaşıyor!',
         body: 'Şoför evinize 500 metreden daha yakın.',
+      );
+    }
+    
+    // 50m kala tekrar bildirim
+    if (!_hasNotified50 && distance < 50) {
+      setState(() => _hasNotified50 = true);
+      NotificationService.showNotification(
+        title: 'Servis Çok Yakın!',
+        body: 'Şoför evinize 50 metreden daha yakın.',
+      );
+    }
+    
+    // Adrese varınca bildirim
+    if (!_hasNotifiedArrived && distance < 10) {
+      setState(() => _hasNotifiedArrived = true);
+      NotificationService.showNotification(
+        title: 'Öğrenci Adrese Vardı',
+        body: 'Şoför adrese ulaştı.',
       );
     }
   }
@@ -129,7 +150,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _resetNotification() async {
-    setState(() => _hasNotified = false);
+    setState(() {
+      _hasNotified500 = false;
+      _hasNotified50 = false;
+      _hasNotifiedArrived = false;
+    });
   }
 
   void _callDriver() {
@@ -190,55 +215,89 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // Harita
           Expanded(
-            child: _driverLocation != null && _driverLocation!.isActive
-              ? FlutterMap(
-                  options: MapOptions(
-                    initialCenter: LatLng(_driverLocation!.lat, _driverLocation!.lng),
-                    initialZoom: 15,
-                    minZoom: 10,
-                    maxZoom: 19,
-                  ),
-                  children: [
-                    TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.servisnoktam.veli',
-                    ),
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: LatLng(_driverLocation!.lat, _driverLocation!.lng),
-                          width: 40,
-                          height: 40,
-                          child: const Icon(
-                            Icons.directions_bus,
-                            size: 40,
-                            color: AppColors.primary,
-                          ),
+            child: Stack(
+              children: [
+                _driverLocation != null && _driverLocation!.isActive
+                  ? FlutterMap(
+                      mapController: _mapController,
+                      options: MapOptions(
+                        initialCenter: LatLng(_driverLocation!.lat, _driverLocation!.lng),
+                        initialZoom: 16,
+                        minZoom: 10,
+                        maxZoom: 20,
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.servisnoktam.veli',
                         ),
-                        Marker(
-                          point: LatLng(widget.homeLat, widget.homeLng),
-                          width: 40,
-                          height: 40,
-                          child: const Icon(
-                            Icons.home,
-                            size: 40,
-                            color: AppColors.success,
-                          ),
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: LatLng(_driverLocation!.lat, _driverLocation!.lng),
+                              width: 40,
+                              height: 40,
+                              child: const Icon(
+                                Icons.directions_bus,
+                                size: 40,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            Marker(
+                              point: LatLng(widget.homeLat, widget.homeLng),
+                              width: 40,
+                              height: 40,
+                              child: const Icon(
+                                Icons.home,
+                                size: 40,
+                                color: AppColors.success,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
+                    )
+                  : const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 12),
+                          Text('Konum bekleniyor...'),
+                        ],
+                      ),
                     ),
-                  ],
-                )
-              : const Center(
+                // Zoom butonları
+                Positioned(
+                  right: 16,
+                  bottom: 16,
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 12),
-                      Text('Konum bekleniyor...'),
+                      FloatingActionButton(
+                        heroTag: 'zoom_in',
+                        mini: true,
+                        onPressed: () {
+                          _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1);
+                        },
+                        backgroundColor: AppColors.primary,
+                        child: const Icon(Icons.add, color: Colors.white),
+                      ),
+                      const SizedBox(height: 8),
+                      FloatingActionButton(
+                        heroTag: 'zoom_out',
+                        mini: true,
+                        onPressed: () {
+                          _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1);
+                        },
+                        backgroundColor: AppColors.primary,
+                        child: const Icon(Icons.remove, color: Colors.white),
+                      ),
                     ],
                   ),
                 ),
+              ],
+            ),
           ),
           // Info card
           Container(

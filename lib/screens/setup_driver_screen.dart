@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/theme.dart';
 import '../core/models/driver_model.dart';
 import '../services/firestore_service.dart';
+import '../services/notification_service.dart';
 import 'home_screen.dart';
 
 class SetupDriverScreen extends StatefulWidget {
@@ -19,6 +20,14 @@ class _SetupDriverScreenState extends State<SetupDriverScreen> {
     if (_selectedId == null) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('driverId', _selectedId!);
+    
+    // Veli FCM token'ını kaydet
+    final token = await NotificationService.getFCMToken();
+    if (token != null) {
+      final parentId = 'parent_$_selectedId'; // Veli ID'si
+      await FirestoreService.saveParentToken(parentId, token);
+    }
+    
     final homeLat = prefs.getDouble('homeLat');
     final homeLng = prefs.getDouble('homeLng');
     if (!mounted) return;

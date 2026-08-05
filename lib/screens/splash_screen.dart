@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/theme.dart';
+import '../services/notification_service.dart';
 import 'setup_location_screen.dart';
 import 'home_screen.dart';
 
@@ -19,6 +20,8 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _navigate() async {
+    await NotificationService.init();
+    await NotificationService.requestPermissions();
     await Future.delayed(const Duration(seconds: 2));
     final prefs = await SharedPreferences.getInstance();
     final driverId = prefs.getString('driverId');

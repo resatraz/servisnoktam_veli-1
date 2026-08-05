@@ -14,6 +14,7 @@ class MapPickerScreen extends StatefulWidget {
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
   LatLng? _selectedLocation;
+  final MapController _mapController = MapController();
 
   @override
   void initState() {
@@ -32,11 +33,12 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         foregroundColor: Colors.white,
       ),
       body: FlutterMap(
+        mapController: _mapController,
         options: MapOptions(
           initialCenter: _selectedLocation ?? const LatLng(37.1674, 38.7955),
-          initialZoom: 15,
+          initialZoom: 16,
           minZoom: 10,
-          maxZoom: 19,
+          maxZoom: 20,
           onTap: (tapPosition, point) {
             setState(() {
               _selectedLocation = point;
@@ -65,14 +67,40 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          if (_selectedLocation != null) {
-            Navigator.pop(context, _selectedLocation);
-          }
-        },
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.check, color: Colors.white),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'zoom_in',
+            mini: true,
+            onPressed: () {
+              _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1);
+            },
+            backgroundColor: AppColors.primary,
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton(
+            heroTag: 'zoom_out',
+            mini: true,
+            onPressed: () {
+              _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1);
+            },
+            backgroundColor: AppColors.primary,
+            child: const Icon(Icons.remove, color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton(
+            heroTag: 'confirm',
+            onPressed: () {
+              if (_selectedLocation != null) {
+                Navigator.pop(context, _selectedLocation);
+              }
+            },
+            backgroundColor: AppColors.primary,
+            child: const Icon(Icons.check, color: Colors.white),
+          ),
+        ],
       ),
     );
   }
