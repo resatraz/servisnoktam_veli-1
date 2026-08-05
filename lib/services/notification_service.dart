@@ -11,6 +11,7 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
   static final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
+  static int _notificationCount = 0;
 
   static Future<void> init() async {
     // Firebase Messaging
@@ -22,6 +23,7 @@ class NotificationService {
 
     // Firebase Messaging handlers
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      _incrementNotificationCount();
       _showLocalNotification(
         title: message.notification?.title ?? 'Bildirim',
         body: message.notification?.body ?? '',
@@ -30,6 +32,7 @@ class NotificationService {
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       // Bildirime tıklandığında
+      _resetNotificationCount();
     });
 
     // Background message handler
@@ -52,14 +55,32 @@ class NotificationService {
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         // Bildirime tıklandığında yapılacak işlemler
+        _resetNotificationCount();
       },
     );
+  }
+
+  static void _incrementNotificationCount() {
+    _notificationCount++;
+    _updateBadgeNumber();
+  }
+
+  static void _resetNotificationCount() {
+    _notificationCount = 0;
+    _updateBadgeNumber();
+  }
+
+  static Future<void> _updateBadgeNumber() async {
+    // Android için badge number güncelle
+    await _notificationsPlugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>()?.setBadgeNumber(_notificationCount);
   }
 
   static Future<void> showNotification({
     required String title,
     required String body,
   }) async {
+    _incrementNotificationCount();
     await _showLocalNotification(title: title, body: body);
   }
 
@@ -67,7 +88,7 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
       'servisnoktam_channel',
       'Servis Noktam Bildirimleri',
@@ -75,9 +96,12 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,
+      badgeNumber: _notificationCount,
+      ticker: 'ticker',
+      icon: '@mipmap/launcher_icon',
     );
 
-    const NotificationDetails platformChannelSpecifics =
+    final NotificationDetails platformChannelSpecifics =
         NotificationDetails(android: androidPlatformChannelSpecifics);
 
     await _notificationsPlugin.show(
