@@ -31,7 +31,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _hasNotified500 = false;
   bool _hasNotified50 = false;
   bool _hasNotifiedArrived = false;
-  Timer? _locationTimer;
   DateTime? _lastUpdateTime;
   final MapController _mapController = MapController();
 
