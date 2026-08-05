@@ -137,6 +137,14 @@ class _SplashScreenState extends State<SplashScreen> {
                   fontSize: 14,
                 ),
               ),
+              const SizedBox(height: 24),
+              const Text(
+                '© 2026 Nokta Turizm',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                ),
+              ),
             ],
           ),
         ),

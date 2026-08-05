@@ -257,56 +257,48 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: Stack(
               children: [
-                _driverLocation != null && _driverLocation!.isActive
-                  ? FlutterMap(
-                      mapController: _mapController,
-                      options: MapOptions(
-                        initialCenter: LatLng(_driverLocation!.lat, _driverLocation!.lng),
-                        initialZoom: 16,
-                        minZoom: 10,
-                        maxZoom: 20,
-                      ),
-                      children: [
-                        TileLayer(
-                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          userAgentPackageName: 'com.servisnoktam.veli',
-                        ),
-                        MarkerLayer(
-                          markers: [
-                            Marker(
-                              point: LatLng(_driverLocation!.lat, _driverLocation!.lng),
-                              width: 40,
-                              height: 40,
-                              child: const Icon(
-                                Icons.directions_bus,
-                                size: 40,
-                                color: AppColors.primary,
-                              ),
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: _driverLocation != null && _driverLocation!.isActive
+                      ? LatLng(_driverLocation!.lat, _driverLocation!.lng)
+                      : const LatLng(37.1674, 38.7955), // Şanlıurfa
+                    initialZoom: 14,
+                    minZoom: 10,
+                    maxZoom: 20,
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.servisnoktam.veli',
+                    ),
+                    if (_driverLocation != null && _driverLocation!.isActive)
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: LatLng(_driverLocation!.lat, _driverLocation!.lng),
+                            width: 40,
+                            height: 40,
+                            child: const Icon(
+                              Icons.directions_bus,
+                              size: 40,
+                              color: AppColors.primary,
                             ),
-                            Marker(
-                              point: LatLng(widget.homeLat, widget.homeLng),
-                              width: 40,
-                              height: 40,
-                              child: const Icon(
-                                Icons.home,
-                                size: 40,
-                                color: AppColors.success,
-                              ),
+                          ),
+                          Marker(
+                            point: LatLng(widget.homeLat, widget.homeLng),
+                            width: 40,
+                            height: 40,
+                            child: const Icon(
+                              Icons.home,
+                              size: 40,
+                              color: AppColors.success,
                             ),
-                          ],
-                        ),
-                      ],
-                    )
-                  : const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 12),
-                          Text('Konum Bekleniyor...'),
+                          ),
                         ],
                       ),
-                    ),
+                  ],
+                ),
                 // Zoom butonları
                 Positioned(
                   right: 16,
