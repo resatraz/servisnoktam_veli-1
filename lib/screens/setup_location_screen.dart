@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geolocator/geolocator.dart';
 import '../core/theme.dart';
 import 'setup_driver_screen.dart';
 import 'map_picker_screen.dart';
@@ -20,18 +21,63 @@ class _SetupLocationScreenState extends State<SetupLocationScreen> {
   Future<void> _getCurrentLocation() async {
     setState(() => _loading = true);
     try {
-      // Geolocator olmadan varsayılan konum kullan
-      // Gerçek uygulamada geolocator paketi gerekli
-      setState(() {
-        _lat = 37.1674; // Şanlıurfa varsayılan
-        _lng = 38.7955;
-      });
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Konum Servisi Kapalı. Lütfen Açın.'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Konum İzni Reddedildi.'),
+                backgroundColor: AppColors.danger,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Konum İzni Kalıcı Olarak Reddedildi.'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _lat = position.latitude;
+          _lng = position.longitude;
+        });
+      }
     } catch (e) {
-      debugPrint('Konum hatası: $e');
+      debugPrint('Konum Hatası: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Konum alınamadı. Haritadan konum seçebilirsiniz.'),
+            content: Text('Konum Alınamadı. Haritadan Konum Seçebilirsiniz.'),
             backgroundColor: AppColors.danger,
           ),
         );
@@ -98,14 +144,14 @@ class _SetupLocationScreenState extends State<SetupLocationScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary)),
                   const SizedBox(height: 6),
-                  Text('Servis evinize yaklaştığında bildirim almak için',
+                  Text('Servis Evinize Yaklaştığında Bildirim Almak İçin',
                     style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                   const SizedBox(height: 16),
                   if (_lat != null && _lng != null)
                     Column(
                       children: [
                         const Text(
-                          'Konum seçildi ✓',
+                          'Konum Seçildi ✓',
                           style: TextStyle(fontSize: 13, color: AppColors.success, fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: 4),

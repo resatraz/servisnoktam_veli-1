@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/theme.dart';
 import '../core/models/driver_model.dart';
 import '../services/firestore_service.dart';
@@ -79,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _hasNotified500 = true);
       NotificationService.showNotification(
         title: 'Servis Yaklaşıyor!',
-        body: 'Şoför evinize 500 metreden daha yakın.',
+        body: 'Şoför Evinize 500 Metreden Daha Yakın.',
       );
     }
     
@@ -88,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _hasNotified50 = true);
       NotificationService.showNotification(
         title: 'Servis Çok Yakın!',
-        body: 'Şoför evinize 50 metreden daha yakın.',
+        body: 'Şoför Evinize 50 Metreden Daha Yakın.',
       );
     }
     
@@ -97,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() => _hasNotifiedArrived = true);
       NotificationService.showNotification(
         title: 'Öğrenci Adrese Vardı',
-        body: 'Şoför adrese ulaştı.',
+        body: 'Şoför Adrese Ulaştı.',
       );
     }
   }
@@ -109,9 +110,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ? DateTime.now().difference(_lastUpdateTime!)
           : const Duration(minutes: 10);
       if (diff.inMinutes < 60) {
-        return 'Son görülme: ${diff.inMinutes} dk önce';
+        return 'Son Görülme: ${diff.inMinutes} Dk Önce';
       } else {
-        return 'Son görülme: ${diff.inHours} saat önce';
+        return 'Son Görülme: ${diff.inHours} Saat Önce';
       }
     }
     return '● Canlı Takip';
@@ -124,20 +125,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _getLastUpdateText() {
-    if (_lastUpdateTime == null) return 'Güncelleme bekleniyor...';
+    if (_lastUpdateTime == null) return 'Güncelleme Bekleniyor...';
     final now = DateTime.now();
     final diff = now.difference(_lastUpdateTime!);
     if (diff.inSeconds < 60) {
-      return '${diff.inSeconds} saniye önce güncellendi';
+      return '${diff.inSeconds} Saniye Önce Güncellendi';
     } else if (diff.inMinutes < 60) {
-      return '${diff.inMinutes} dakika önce güncellendi';
+      return '${diff.inMinutes} Dakika Önce Güncellendi';
     } else {
-      return '${diff.inHours} saat önce güncellendi';
+      return '${diff.inHours} Saat Önce Güncellendi';
     }
   }
 
   String _getDistanceText() {
-    if (_driverLocation == null) return 'Mesafe hesaplanıyor...';
+    if (_driverLocation == null) return 'Mesafe Hesaplanıyor...';
     final distance = LocationService.calculateDistance(
       widget.homeLat, widget.homeLng,
       _driverLocation!.lat, _driverLocation!.lng,
@@ -155,15 +156,58 @@ class _HomeScreenState extends State<HomeScreen> {
       _hasNotified50 = false;
       _hasNotifiedArrived = false;
     });
+    // Konumu yenile
+    _loadDriverLocation();
   }
 
-  void _callDriver() {
+  Future<void> _loadDriverLocation() async {
+    try {
+      final locationData = await FirestoreService.listenDriverLocation(widget.driverId).first;
+      if (locationData != null && mounted) {
+        setState(() {
+          _driverLocation = LocationModel(
+            lat: locationData['lat'] ?? 0,
+            lng: locationData['lng'] ?? 0,
+            isActive: locationData['isActive'] ?? true,
+          );
+          _lastUpdateTime = DateTime.now();
+        });
+        _checkDistanceAndNotify();
+      }
+    } catch (e) {
+      print('Konum yenileme hatası: $e');
+    }
+  }
+
+  void _callDriver() async {
     if (_driver?.phone.isNotEmpty == true) {
-      // URL launcher ile arama yapılabilir
-      // Şimdilik sadece placeholder
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${_driver!.phone} aranıyor...')),
-      );
+      final url = 'tel:${_driver!.phone}';
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${_driver!.phone} Aranamadı')),
+          );
+        }
+      }
+    }
+  }
+
+  void _emergencyCall() async {
+    if (_driver?.phone.isNotEmpty == true) {
+      final url = 'tel:${_driver!.phone}';
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Acil Arama Yapılamadı')),
+          );
+        }
+      }
     }
   }
 
@@ -263,7 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           CircularProgressIndicator(),
                           SizedBox(height: 12),
-                          Text('Konum bekleniyor...'),
+                          Text('Konum Bekleniyor...'),
                         ],
                       ),
                     ),
@@ -373,6 +417,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
+                    // Normal arama butonu
                     Column(
                       children: [
                         IconButton(
@@ -385,6 +430,27 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const Text(
                           'Ara',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 16),
+                    // Acil durum butonu
+                    Column(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.emergency, size: 20),
+                          onPressed: _emergencyCall,
+                          tooltip: 'Acil Arama',
+                          color: AppColors.danger,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                        const Text(
+                          'Acil',
                           style: TextStyle(
                             fontSize: 10,
                             color: AppColors.textSecondary,

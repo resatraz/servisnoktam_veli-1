@@ -55,7 +55,7 @@ class _SetupDriverScreenState extends State<SetupDriverScreen> {
             width: double.infinity,
             color: AppColors.primary,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Text('Çocuğunuzun servisini seçin',
+            child: Text('Çocuğunuzun Servisini Seçin',
               style: TextStyle(fontSize: 12, color: AppColors.primaryAccent)),
           ),
           Expanded(
@@ -66,7 +66,7 @@ class _SetupDriverScreenState extends State<SetupDriverScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('Şoför bulunamadı'));
+                  return const Center(child: Text('Şoför Bulunamadı'));
                 }
                 final drivers = snapshot.data!;
                 return ListView.builder(
@@ -129,7 +129,7 @@ class _SetupDriverScreenState extends State<SetupDriverScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _selectedId != null ? _confirm : null,
-                child: const Text('Devam et'),
+                child: const Text('Devam Et'),
               ),
             ),
           ),

@@ -25,7 +25,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       final announcements = await FirestoreService.getAnnouncements();
       setState(() => _announcements = announcements);
     } catch (e) {
-      print('Duyurular yüklenirken hata: $e');
+      print('Duyurular Yüklenirken Hata: $e');
     } finally {
       setState(() => _loading = false);
     }
@@ -58,7 +58,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        'Henüz duyuru yok',
+                        'Henüz Duyuru Yok',
                         style: TextStyle(
                           fontSize: 18,
                           color: Colors.grey,
