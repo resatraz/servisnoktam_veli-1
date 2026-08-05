@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -50,21 +49,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _listenLocation() {
-    // Mock location updates - Firebase olmadan test için
-    _locationTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    // Firestore'dan real-time konum dinleme
+    FirestoreService.listenDriverLocation(widget.driverId).listen((locationData) {
       if (!mounted) return;
-      // Rastgele konum simülasyonu
-      final randomLat = widget.homeLat + (DateTime.now().millisecond % 100 - 50) / 10000;
-      final randomLng = widget.homeLng + (DateTime.now().millisecond % 100 - 50) / 10000;
-      setState(() {
-        _driverLocation = LocationModel(
-          lat: randomLat,
-          lng: randomLng,
-          isActive: true,
-        );
-        _lastUpdateTime = DateTime.now();
-      });
-      _checkDistanceAndNotify();
+      if (locationData != null) {
+        setState(() {
+          _driverLocation = LocationModel(
+            lat: locationData['lat'] ?? 0,
+            lng: locationData['lng'] ?? 0,
+            isActive: locationData['isActive'] ?? true,
+          );
+          _lastUpdateTime = DateTime.now();
+        });
+        _checkDistanceAndNotify();
+      }
     });
   }
 
@@ -213,7 +211,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _locationTimer?.cancel();
     super.dispose();
   }
 

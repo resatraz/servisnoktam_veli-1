@@ -102,7 +102,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     Column(
                       children: [
                         Text(
-                          'TAŞIMACILIĞIN',
+                          'NOKTA TURİZM',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -125,30 +125,16 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-              // Servis Takibi butonu
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Konum kurulum ekranına geç
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.primary,
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16.0),
-                    ),
-                  ),
-                  child: const Text(
-                    'Servis Takibi',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
+              // Yükleme göstergesi
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Yükleniyor...',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
                 ),
               ),
             ],
