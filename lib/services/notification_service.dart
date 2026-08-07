@@ -4,7 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 // Top-level background handler
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('Background Message: ${message.notification?.title}');
+  // Background message received
 }
 
 class NotificationService {
@@ -17,8 +17,7 @@ class NotificationService {
     await _firebaseMessaging.requestPermission();
     
     // Firebase token al
-    final token = await _firebaseMessaging.getToken();
-    print('FCM Token: $token');
+    await _firebaseMessaging.getToken();
 
     // Firebase Messaging handlers
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {

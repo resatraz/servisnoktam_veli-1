@@ -12,7 +12,6 @@ class FirestoreService {
         return DriverModel.fromMap(doc.id, doc.data());
       }).toList();
     } catch (e) {
-      print('Sürücüleri getirme hatası: $e');
       return [];
     }
   }
@@ -26,7 +25,6 @@ class FirestoreService {
       }
       return null;
     } catch (e) {
-      print('Sürücü getirme hatası: $e');
       return null;
     }
   }
@@ -52,7 +50,7 @@ class FirestoreService {
     try {
       await _firestore.collection('parents').doc(parentId).set(data);
     } catch (e) {
-      print('Veli bilgisi kaydetme hatası: $e');
+      // Error saving parent info
     }
   }
 
@@ -65,7 +63,6 @@ class FirestoreService {
           .get();
       return snapshot.docs.map((doc) => doc.data()).toList();
     } catch (e) {
-      print('Duyuruları getirme hatası: $e');
       return [];
     }
   }
@@ -85,7 +82,7 @@ class FirestoreService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      print('Konum güncelleme hatası: $e');
+      // Error saving parent info
     }
   }
 
@@ -97,7 +94,7 @@ class FirestoreService {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
-      print('Token kaydetme hatası: $e');
+      // Error saving parent info
     }
   }
 
@@ -110,7 +107,6 @@ class FirestoreService {
       }
       return null;
     } catch (e) {
-      print('Token getirme hatası: $e');
       return null;
     }
   }

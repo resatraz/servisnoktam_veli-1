@@ -25,7 +25,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       final announcements = await FirestoreService.getAnnouncements();
       setState(() => _announcements = announcements);
     } catch (e) {
-      print('Duyurular Yüklenirken Hata: $e');
+      // Error loading announcements
     } finally {
       setState(() => _loading = false);
     }
@@ -90,7 +90,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
+                                      color: AppColors.primary.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Icon(

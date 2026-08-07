@@ -6,6 +6,7 @@ class DriverModel {
   final String photoUrl;
   final String phone;
   final bool isActive;
+  final Map<String, double>? schoolLocation;
 
   DriverModel({
     required this.id,
@@ -15,6 +16,7 @@ class DriverModel {
     required this.photoUrl,
     required this.phone,
     required this.isActive,
+    this.schoolLocation,
   });
 
   factory DriverModel.fromMap(String id, Map<String, dynamic> map) {
@@ -26,6 +28,12 @@ class DriverModel {
       photoUrl: map['photoUrl'] ?? '',
       phone: map['phone'] ?? '',
       isActive: map['isActive'] ?? false,
+      schoolLocation: map['schoolLocation'] != null
+          ? {
+              'latitude': map['schoolLocation']['latitude']?.toDouble() ?? 0.0,
+              'longitude': map['schoolLocation']['longitude']?.toDouble() ?? 0.0,
+            }
+          : null,
     );
   }
 
@@ -35,6 +43,7 @@ class DriverModel {
     'school': school,
     'photoUrl': photoUrl,
     'isActive': isActive,
+    'schoolLocation': schoolLocation,
   };
 }
 

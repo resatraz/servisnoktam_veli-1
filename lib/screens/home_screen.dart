@@ -190,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _checkDistanceAndNotify();
       }
     } catch (e) {
-      print('Konum yenileme hatası: $e');
+      // Error refreshing location
     }
   }
 
@@ -291,8 +291,47 @@ class _HomeScreenState extends State<HomeScreen> {
                       userAgentPackageName: 'com.servisnoktam.veli',
                     ),
                     if (_driverLocation != null && _driverLocation!.isActive)
+                      PolylineLayer(
+                        polylines: [
+                          // Okul → Şoför → Ev çizgisi
+                          if (_driver?.schoolLocation != null)
+                            Polyline(
+                              points: [
+                                LatLng(_driver!.schoolLocation!['latitude']!, _driver!.schoolLocation!['longitude']!),
+                                LatLng(_driverLocation!.lat, _driverLocation!.lng),
+                                LatLng(widget.homeLat, widget.homeLng),
+                              ],
+                              strokeWidth: 4.0,
+                              color: Colors.blue,
+                            ),
+                          // Şoför → Ev çizgisi (okul konumu yoksa)
+                          if (_driver?.schoolLocation == null)
+                            Polyline(
+                              points: [
+                                LatLng(_driverLocation!.lat, _driverLocation!.lng),
+                                LatLng(widget.homeLat, widget.homeLng),
+                              ],
+                              strokeWidth: 4.0,
+                              color: Colors.blue,
+                            ),
+                        ],
+                      ),
+                    if (_driverLocation != null && _driverLocation!.isActive)
                       MarkerLayer(
                         markers: [
+                          // Okul marker
+                          if (_driver?.schoolLocation != null)
+                            Marker(
+                              point: LatLng(_driver!.schoolLocation!['latitude']!, _driver!.schoolLocation!['longitude']!),
+                              width: 40,
+                              height: 40,
+                              child: const Icon(
+                                Icons.school,
+                                size: 40,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          // Şoför marker
                           Marker(
                             point: LatLng(_driverLocation!.lat, _driverLocation!.lng),
                             width: 40,
@@ -303,6 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: AppColors.primary,
                             ),
                           ),
+                          // Ev marker
                           Marker(
                             point: LatLng(widget.homeLat, widget.homeLng),
                             width: 40,
@@ -460,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
