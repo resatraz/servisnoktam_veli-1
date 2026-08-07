@@ -134,6 +134,24 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  double _getProgressPercentage() {
+    if (_driverLocation == null) return 0.0;
+    final distance = LocationService.calculateDistance(
+      widget.homeLat, widget.homeLng,
+      _driverLocation!.lat, _driverLocation!.lng,
+    );
+    // 2000m mesafeyi %100 kabul edelim
+    final maxDistance = 2000.0;
+    final percentage = 1.0 - (distance / maxDistance);
+    return percentage.clamp(0.0, 1.0);
+  }
+
+  Color _getProgressColor() {
+    final percentage = _getProgressPercentage();
+    if (percentage < 0.5) return Colors.red;
+    return Colors.green;
+  }
+
   String _getDistanceText() {
     if (_driverLocation == null) return 'Mesafe Hesaplanıyor...';
     final distance = LocationService.calculateDistance(
@@ -342,6 +360,68 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Okul-Mesafe-Ev Bar
+                if (_driver?.school.isNotEmpty == true)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              _driver!.school,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            Text(
+                              _getDistanceText(),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            const Text(
+                              'Ev',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.success,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          height: 14,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(7),
+                            border: Border.all(color: AppColors.primary, width: 1),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: FractionallySizedBox(
+                              alignment: Alignment.centerLeft,
+                              widthFactor: _getProgressPercentage(),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: _getProgressColor(),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 // Üst satır: Durum ve mesafe
                 Row(
                   children: [
@@ -365,6 +445,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: _getStatusColor(),
                             ),
                           ),
+                          if (_driver?.school.isNotEmpty == true)
+                            Text(
+                              _driver!.school,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                         ],
                       ),
                     ),
