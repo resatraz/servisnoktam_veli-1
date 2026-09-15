@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 import '../core/theme.dart';
 import '../core/models/driver_model.dart';
 import '../services/firestore_service.dart';
@@ -21,11 +22,28 @@ class _SetupDriverScreenState extends State<SetupDriverScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('driverId', _selectedId!);
     
-    // Veli FCM token'ını kaydet
+    // Veli için unique ID oluştur - çakışmayı önle (uuid)
+    String? parentId = prefs.getString('parentId');
+    if (parentId == null) {
+      parentId = 'parent_${const Uuid().v4()}';
+      await prefs.setString('parentId', parentId);
+    }
+    
+    // Veli FCM token'ını kaydet (unique parentId ile)
     final token = await NotificationService.getFCMToken();
     if (token != null) {
-      final parentId = 'parent_$_selectedId'; // Veli ID'si
       await FirestoreService.saveParentToken(parentId, token);
+      // Ayrıca driverId ve home bilgisini de kaydet (parentCount doğru sayılsın)
+      final homeLat = prefs.getDouble('homeLat');
+      final homeLng = prefs.getDouble('homeLng');
+      if (homeLat != null && homeLng != null) {
+        await FirestoreService.saveParentInfo(parentId, {
+          'driverId': _selectedId,
+          'homeLocation': {'lat': homeLat, 'lng': homeLng},
+          'fcmToken': token,
+          'createdAt': DateTime.now().toIso8601String(),
+        });
+      }
     }
     
     final homeLat = prefs.getDouble('homeLat');

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -33,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _hasNotifiedArrived = false;
   DateTime? _lastUpdateTime;
   final MapController _mapController = MapController();
+  StreamSubscription? _locationSubscription;
 
   @override
   void initState() {
@@ -48,8 +50,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _listenLocation() {
-    // Firestore'dan real-time konum dinleme
-    FirestoreService.listenDriverLocation(widget.driverId).listen((locationData) {
+    // Firestore'dan real-time konum dinleme - subscription sakla
+    _locationSubscription?.cancel();
+    _locationSubscription = FirestoreService.listenDriverLocation(widget.driverId).listen((locationData) {
       if (!mounted) return;
       if (locationData != null) {
         setState(() {
@@ -72,30 +75,24 @@ class _HomeScreenState extends State<HomeScreen> {
       _driverLocation!.lat, _driverLocation!.lng,
     );
     
-    // 500m kala bildirim
-    if (!_hasNotified500 && distance < 500) {
-      setState(() => _hasNotified500 = true);
-      NotificationService.showNotification(
-        title: 'Servis Yaklaşıyor!',
-        body: 'Şoför Evinize 500 Metreden Daha Yakın.',
-      );
-    }
-    
-    // 50m kala tekrar bildirim
-    if (!_hasNotified50 && distance < 50) {
-      setState(() => _hasNotified50 = true);
-      NotificationService.showNotification(
-        title: 'Servis Çok Yakın!',
-        body: 'Şoför Evinize 50 Metreden Daha Yakın.',
-      );
-    }
-    
-    // Adrese varınca bildirim
+    // Tek seferde sadece 1 bildirim - en yakından başla (10m > 50m > 500m)
     if (!_hasNotifiedArrived && distance < 10) {
       setState(() => _hasNotifiedArrived = true);
       NotificationService.showNotification(
         title: 'Öğrenci Adrese Vardı',
         body: 'Şoför Adrese Ulaştı.',
+      );
+    } else if (!_hasNotified50 && distance < 50) {
+      setState(() => _hasNotified50 = true);
+      NotificationService.showNotification(
+        title: 'Servis Çok Yakın!',
+        body: 'Şoför Evinize 50 Metreden Daha Yakın.',
+      );
+    } else if (!_hasNotified500 && distance < 500) {
+      setState(() => _hasNotified500 = true);
+      NotificationService.showNotification(
+        title: 'Servis Yaklaşıyor!',
+        body: 'Şoför Evinize 500 Metreden Daha Yakın.',
       );
     }
   }
@@ -228,6 +225,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _locationSubscription?.cancel();
+    _mapController.dispose();
     super.dispose();
   }
 
@@ -316,22 +315,76 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                         ],
                       ),
+                    // Okul ve Ev marker - HER ZAMAN göster (şoför aktif olmasa bile)
+                    MarkerLayer(
+                      markers: [
+                        if (_driver?.schoolLocation != null)
+                          Marker(
+                            point: LatLng(_driver!.schoolLocation!['latitude']!, _driver!.schoolLocation!['longitude']!),
+                            width: 80,
+                            height: 80,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFF5722),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 3),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFFFF5722).withValues(alpha: 0.5),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.school,
+                                    size: 28,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                if (_driver?.school.isNotEmpty == true)
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 2),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFF5722),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: Colors.white, width: 1.5),
+                                    ),
+                                    child: Text(
+                                      _driver!.school.length > 12 ? '${_driver!.school.substring(0, 12)}...' : _driver!.school,
+                                      style: const TextStyle(
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        Marker(
+                          point: LatLng(widget.homeLat, widget.homeLng),
+                          width: 40,
+                          height: 40,
+                          child: const Icon(
+                            Icons.home,
+                            size: 40,
+                            color: AppColors.success,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Şoför marker - sadece aktifken
                     if (_driverLocation != null && _driverLocation!.isActive)
                       MarkerLayer(
                         markers: [
-                          // Okul marker
-                          if (_driver?.schoolLocation != null)
-                            Marker(
-                              point: LatLng(_driver!.schoolLocation!['latitude']!, _driver!.schoolLocation!['longitude']!),
-                              width: 40,
-                              height: 40,
-                              child: const Icon(
-                                Icons.school,
-                                size: 40,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          // Şoför marker
                           Marker(
                             point: LatLng(_driverLocation!.lat, _driverLocation!.lng),
                             width: 40,
@@ -340,17 +393,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               Icons.directions_bus,
                               size: 40,
                               color: AppColors.primary,
-                            ),
-                          ),
-                          // Ev marker
-                          Marker(
-                            point: LatLng(widget.homeLat, widget.homeLng),
-                            width: 40,
-                            height: 40,
-                            child: const Icon(
-                              Icons.home,
-                              size: 40,
-                              color: AppColors.success,
                             ),
                           ),
                         ],
